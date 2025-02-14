@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Video & Inventory</title>
+    <style>
+        /* --- Reset & Basic Styling --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: sans-serif; /* Or any Minecraft-like font you prefer */
+            overflow: hidden;       /* Important to prevent scrollbars from the video */
+        }
+
+        /* --- Video Background --- */
+        #video-background-container { /* NEW: Container for video */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;  /* Hide any excess video */
+            z-index: -100;
+        }
+
+        #video-background {
+            position: absolute; /* Position relative to the container */
+            top: 50%;          /* Center vertically */
+            left: 50%;         /* Center horizontally */
+            transform: translate(-50%, -50%); /* Center precisely */
+            min-width: 100%;    /* Ensure it fills at least the container width */
+            min-height: 100%;   /* Ensure it fills at least the container height */
+            width: auto;       /* Allow width to adjust proportionally */
+            height: auto;      /* Allow height to adjust proportionally */
+
+           /*  Handle aspect ratio differences (most important part)*/
+            /* If video is wider than the screen, fill based on height */
+           /* object-fit: cover; this didnt work as expected so we will handle it manually */
+            
+        }
+
+        /* --- Prompt Container --- */
+        #prompt-container {
+            position: fixed;
+            top: 50%;  /* Center vertically */
+            left: 50%; /* Center horizontally */
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black */
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            z-index: 10; /* Above the video, below the inventory */
+            display: flex; /* Use flexbox for easy alignment */
+            align-items: center; /* Vertically center content */
+            justify-content: center; /* Horizontally center content */
+            font-size: 1.2em;
+        }
+        #prompt-container p {
+          margin: 0;
+        }
+
+
+        /* --- Inventory Container --- */
+        #inventory-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(50, 50, 50, 0.8);  /* Dark, semi-transparent background */
+            border: 4px solid #444; /* Dark border */
+            border-radius: 10px;  /* Rounded corners */
+            padding: 20px;
+            display: none;  /* Initially hidden */
+            z-index: 100; /* Above everything else */
+            width: 80%;         /* Adjust as needed */
+            max-width: 600px;    /* Prevent it from being too wide */
+        }
+
+
+        /* --- Inventory Grid --- */
+        #inventory-grid {
+          display: grid;
+          grid-template-columns: repeat(9, 1fr); /* 9 Columns - similar to Minecraft */
+          gap: 5px;  /* Small gap between slots */
+        }
+
+
+        /* --- Inventory Slot --- */
+        .inventory-slot {
+            width: 50px;             /* Adjust as needed */
+            height: 50px;
+            background-color: rgba(100, 100, 100, 0.7); /* Darker, semi-transparent */
+            border: 2px solid #666;  /* Light gray border */
+            border-radius: 5px;         /* Rounded corners */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+              cursor: pointer; /* Show hand cursor on hover */
+              position: relative; /*  For absolute positioning of tooltips */
+        }
+        .inventory-slot img {
+          max-width: 80%;       /* Ensure images fit */
+          max-height: 80%;
+          display: block;    /* Remove extra spacing below the image */
+        }
+
+
+        /* --- Tooltip (Optional, for item names) --- */
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 110%;          /* Position it just above the slot */
+            left: 50%;              /* Center horizontally */
+            transform: translateX(-50%);  /* Necessary for centering */
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px;
+            border-radius: 4px;
+            white-space: nowrap;      /* Prevent text from wrapping */
+            z-index: 101;
+        }
+
+        .inventory-slot:hover .tooltip {
+          display: block;
+        }
+
+        /*--- close inventory button ---*/
+        #close-inventory {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        #close-inventory:hover {
+          background-color: rgba(255,255,255,0.2);
+        }
+
+
+        /* --- Media Queries (for smaller screens) --- */
+        @media (max-width: 768px) {
+          #inventory-grid {
+            grid-template-columns: repeat(3, 1fr); /* Fewer columns on small screens */
+          }
+          .inventory-slot {
+            width: 40px;     /* Slightly smaller slots */
+            height: 40px;
+          }
+             #prompt-container {
+            font-size: 1em; /*Reduce prompt size on very small screens*/
+             }
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <!-- Video Background Container -->
+    <div id="video-background-container">  <!-- NEW: Container for video -->
+      <!-- PLACEHOLDER: Replace 'path/to/your/video.mp4' with the actual path to your video file. WebM is generally better for looping. -->
+        <video id="video-background" autoplay loop muted>
+            <source src="bg.mp4" type="video/mp4">
+            <!-- Consider adding WebM for better browser compatibility -->
+            <source src="bg.mp4" type="video/webm">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <!-- Prompt to press "e" -->
+    <div id="prompt-container">
+        <p>Press 'E' to open inventory</p>
+    </div>
+
+    <!-- Inventory Container -->
+    <div id="inventory-container">
+        <button id="close-inventory" title="Close Inventory">&times;</button>  <!-- Close button -->
+
+        <div id="inventory-grid">
+          <!--  Elytra Slot -->
+          <div class="inventory-slot" id="elytra-slot" data-url="https://saad-patel-7379.github.io/elytra">
+            <!-- PLACEHOLDER: Replace 'path/to/elytra.png' with the actual path to your elytra image -->
+           <img src="elytra.webp" alt="Elytra">
+           <span class="tooltip">Fly for Love</span>
+          </div>
+
+           <!--  Sword Slot -->
+           <div class="inventory-slot" id="sword-slot" data-url="https://saad-patel-7379.github.io/creeper">
+             <!-- PLACEHOLDER: Replace 'path/sword.webp' with the actual path to your sword image -->
+             <img src="sword.webp" alt="Sword">
+              <span class="tooltip">Whack-a-Creeper</span>
+            </div>
+
+          <!-- Placeholder Empty Slots (at least 7, for a 3x3, can add more) -->
+             <div class="inventory-slot"></div>
+             <div class="inventory-slot"></div>
+             <div class="inventory-slot"></div>
+             <div class="inventory-slot"></div>
+             <div class="inventory-slot"></div>
+             <div class="inventory-slot"></div>
+             <div class="inventory-slot"></div>
+
+
+        </div>
+    </div>
+
+
+    <script>
+
+        // --- DOM Element References ---
+        const promptContainer = document.getElementById('prompt-container');
+        const inventoryContainer = document.getElementById('inventory-container');
+        const inventorySlots = document.querySelectorAll('.inventory-slot');  // Select ALL slots
+        const closeInventoryButton = document.getElementById('close-inventory');
+        const videoBackground = document.getElementById('video-background'); // Get the video element
+        const videoContainer = document.getElementById('video-background-container');
+
+
+        // --- Event Listeners ---
+
+        // 1. Key Press Listener (for 'e' key)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'e' || event.key === 'E') {
+                toggleInventory();
+            }
+        });
+
+        // 2. Click Listener for Inventory Slots (using event delegation)
+        inventoryContainer.addEventListener('click', function(event) {
+          const clickedSlot = event.target.closest('.inventory-slot'); // Find nearest ancestor
+          if(clickedSlot) {  // Make sure it's actually a slot we clicked
+                handleSlotClick(clickedSlot);
+          }
+        });
+
+
+        //3. click listner for close inventory button
+        closeInventoryButton.addEventListener('click', function(e){
+            closeInventory();
+        });
+        //4. Add an event listener for when the video metadata has loaded
+        videoBackground.addEventListener('loadedmetadata', adjustVideoSize);
+        //5. Add listener for when the window is resized
+        window.addEventListener('resize', adjustVideoSize);
+
+
+
+        // --- Functions ---
+
+         function adjustVideoSize() {
+            const videoAspectRatio = videoBackground.videoWidth / videoBackground.videoHeight;
+            const containerAspectRatio = videoContainer.offsetWidth / videoContainer.offsetHeight;
+
+            if (containerAspectRatio > videoAspectRatio) {
+                // Window is wider than video, fit to width
+                videoBackground.style.width = '100%';
+                videoBackground.style.height = 'auto';
+            } else {
+                // Window is taller than video, fit to height
+                videoBackground.style.width = 'auto';
+                videoBackground.style.height = '100%';
+            }
+        }
+
+
+        // Function to toggle the inventory's visibility
+        function toggleInventory() {
+            if (inventoryContainer.style.display === 'none' ||  inventoryContainer.style.display === '') {
+              openInventory();
+
+            } else {
+               closeInventory();
+            }
+        }
+
+      function openInventory(){
+        inventoryContainer.style.display = 'block';
+        promptContainer.style.display = 'none';   // Hide the prompt
+      }
+
+      function closeInventory(){
+        inventoryContainer.style.display = 'none';
+              promptContainer.style.display = 'flex';    //Re show the prompt
+      }
+
+        // Function to handle clicks on inventory slots
+        function handleSlotClick(slot) {
+            const redirectUrl = slot.dataset.url;  // Get the URL from the data-url attribute
+
+            // Check if a redirect URL is actually set, and it's not just equal to a placeholder
+            if (redirectUrl && redirectUrl !== "PLACEHOLDER_ELYTRA_URL" && redirectUrl !== "PLACEHOLDER_SWORD_URL") {
+                window.location.href = redirectUrl; // Redirect to the URL
+            } else {
+              console.warn("No redirect URL set for this slot, or placeholder URL is still present:", slot); // Log warning for the developer
+            }
+        }
+
+    </script>
+</body>
+</html>
